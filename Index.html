@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Kaffee QR Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kaffee QR">
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 16px; }
+    h1 { color: #f59e0b; font-size: 1.5rem; }
+    
+    .card { background-color: #1e293b; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+    
+    .btn { display: block; width: 100%; padding: 14px; background-color: #d97706; color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; text-align: center; cursor: pointer; margin-top: 10px; }
+    .btn:active { background-color: #b45309; }
+    .btn-secondary { background-color: #334155; }
+    .btn-relink { background-color: #0284c7; }
+    
+    #video-container { position: relative; width: 100%; height: 260px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    #video { width: 100%; height: 100%; object-fit: cover; }
+    .scan-overlay { position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; transform: translate(-50%, -50%); border: 2px solid #f59e0b; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5); }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .stat-box { background-color: rgba(51, 65, 85, 0.5); border: 1px solid #475569; padding: 10px; border-radius: 12px; text-align: center; }
+    .stat-label { font-size: 0.75rem; color: #94a3b8; display: block; }
+    .stat-val { font-size: 1.1rem; font-weight: bold; color: #fbbf24; margin-top: 4px; display: block; }
+
+    select { width: 100%; padding: 12px; background-color: #334155; border: 1px solid #475569; color: white; border-radius: 12px; font-size: 1rem; margin-top: 8px; }
+    .hidden { display: none !important; }
+    .code-tag { font-family: monospace; font-size: 0.8rem; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 6px; }
+    .loading-text { color: #f59e0b; text-align: center; margin: 20px 0; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>☕ Kaffee QR Manager</h1>
+  </header>
+
+  <div class="card">
+    
+    <div id="start-view">
+      <p style="color: #94a3b8; font-size: 0.9rem; text-align: center; margin-bottom: 16px;">
+        Wähle eine Aktion aus, um die Kamera zu starten:
+      </p>
+      <button onclick="startLiveScan('READ')" class="btn">🔍 Live-Scan / Anzeigen</button>
+      <button onclick="startLiveScan('RELINK')" class="btn btn-relink">🔄 Neu verbinden (Neu belegen)</button>
+    </div>
+
+    <div id="scanner-view" class="hidden">
+      <div id="video-container">
+        <video id="video" playsinline></video>
+        <div class="scan-overlay"></div>
+      </div>
+      <p style="text-align: center; color: #94a3b8; font-size: 0.85rem;">QR-Code im Rahmen ausrichten...</p>
+      <button onclick="stopCamera(); resetApp();" class="btn btn-secondary">Abbrechen</button>
+    </div>
+
+    <div id="loading" class="hidden loading-text">
+      Lade Daten aus Google Sheets...
+    </div>
+
+    <div id="result-found" class="hidden">
+      <div style="text-align: center; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(245,158,11,0.2);">
+        <span class="code-tag" id="res-qr"></span>
+        <h2 style="font-size: 1.4rem; font-weight: bold; margin-top: 6px; color: white;" id="res-name"></h2>
+      </div>
+
+      <div class="grid">
+        <div class="stat-box">
+          <span class="stat-label">Temp</span>
+          <span class="stat-val" id="res-temp"></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Gewicht</span>
+          <span class="stat-val" id="res-gewicht"></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Mahlgrad</span>
+          <span class="stat-val" id="res-mahlgrad"></span>
+        </div>
+      </div>
+
+      <button onclick="resetApp()" class="btn btn-secondary">Hauptmenü</button>
+    </div>
+
+    <div id="relink-form" class="hidden">
+      <div style="text-align: center; background: rgba(2, 132, 199, 0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.2); margin-bottom: 12px;">
+        <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">QR-Code verknüpfen:</p>
+        <p class="code-tag" style="color: #7dd3fc; margin-top: 4px;" id="target-qr"></p>
+      </div>
+
+      <label style="font-size: 0.85rem; color: #cbd5e1;">Wähle die gewünschte Bohne aus:</label>
+      <select id="select-bohne"></select>
+
+      <button onclick="executeRelink()" class="btn btn-relink">Zuordnung Speichern</button>
+      <button onclick="resetApp()" class="btn btn-secondary">Abbrechen</button>
+    </div>
+
+  </div>
+
+  <canvas id="hidden-canvas" class="hidden"></canvas>
+
+  <script>
+    // FUeGE HIER DEINE KOPIERTE GOOGLE APPS SCRIPT WEB-APP URL EIN:
+    const API_URL = "https://script.google.com/macros/s/AKfycbz847hIZo1s-NcPHEn4TceW2UuABSz69bILVIp7OvyN9__bBg4ewZOnpAspQLEvTts/exec";
+
+    let currentScannedQR = "";
+    let currentMode = "READ";
+    let videoStream = null;
+    let animationFrameId = null;
+
+    function startLiveScan(mode) {
+      currentMode = mode;
+      showView('scanner-view');
+
+      const video = document.getElementById('video');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(function(stream) {
+          videoStream = stream;
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
+          animationFrameId = requestAnimationFrame(tick);
+        })
+        .catch(function(err) {
+          alert("Kamerazugriff fehlgeschlagen.");
+          resetApp();
+        });
+    }
+
+    function tick() {
+      const video = document.getElementById('video');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+          currentScannedQR = code.data;
+          stopCamera();
+          showView('loading');
+
+          if (currentMode === 'RELINK') {
+            fetch(`${API_URL}?action=getMaster`)
+              .then(res => res.json())
+              .then(prepareRelinkForm);
+          } else {
+            fetch(`${API_URL}?action=scan&qr=${encodeURIComponent(currentScannedQR)}`)
+              .then(res => res.json())
+              .then(handleScanResult);
+          }
+          return;
+        }
+      }
+      animationFrameId = requestAnimationFrame(tick);
+    }
+
+    function stopCamera() {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+    }
+
+    function handleScanResult(data) {
+      if (data.status === 'FOUND') {
+        document.getElementById('res-qr').innerText = "QR: " + data.qrCode;
+        document.getElementById('res-name').innerText = data.bohnenName;
+        document.getElementById('res-temp').innerText = data.temperatur;
+        document.getElementById('res-gewicht').innerText = data.gewicht;
+        document.getElementById('res-mahlgrad').innerText = data.mahlgrad;
+        showView('result-found');
+      } else {
+        document.getElementById('form-title-text').innerText = "Unbekannter Code – Erstmalig zuordnen:";
+        populateDropdown(data.masterList);
+        showView('relink-form');
+      }
+    }
+
+    function prepareRelinkForm(masterList) {
+      document.getElementById('form-title-text').innerText = "Verknüpfung ändern für:";
+      populateDropdown(masterList);
+      showView('relink-form');
+    }
+
+    function populateDropdown(list) {
+      const select = document.getElementById('select-bohne');
+      select.innerHTML = '';
+      list.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.innerText = `${item.name} (${item.id})`;
+        select.appendChild(opt);
+      });
+      document.getElementById('target-qr').innerText = currentScannedQR;
+    }
+
+    function executeRelink() {
+      const selectedBohnenId = document.getElementById('select-bohne').value;
+      if (!selectedBohnenId) return;
+
+      showView('loading');
+
+      const action = (currentMode === 'RELINK') ? 'relink' : 'link';
+      fetch(`${API_URL}?action=${action}&qr=${encodeURIComponent(currentScannedQR)}&bohnenId=${encodeURIComponent(selectedBohnenId)}`)
+        .then(res => res.json())
+        .then(handleScanResult);
+    }
+
+    function resetApp() {
+      stopCamera();
+      showView('start-view');
+    }
+
+    function showView(viewId) {
+      document.getElementById('start-view').classList.add('hidden');
+      document.getElementById('scanner-view').classList.add('hidden');
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('result-found').classList.add('hidden');
+      document.getElementById('relink-form').classList.add('hidden');
+
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
