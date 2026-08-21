@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Kaffee QR Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kaffee QR">
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 12px; }
+    h1 { color: #f59e0b; font-size: 1.5rem; }
+    
+    .sync-bar { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 0.8rem; color: #94a3b8; }
+    .btn-sync { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+    
+    .card { background-color: #1e293b; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+    
+    .btn { display: block; width: 100%; padding: 14px; background-color: #d97706; color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; text-align: center; cursor: pointer; margin-top: 10px; }
+    .btn:active { background-color: #b45309; }
+    .btn-secondary { background-color: #334155; }
+    .btn-relink { background-color: #0284c7; }
+    .btn-manage { background-color: #10b981; }
+    .btn-danger { background-color: #ef4444; }
+    
+    #video-container { position: relative; width: 100%; height: 260px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    #video { width: 100%; height: 100%; object-fit: cover; }
+    .scan-overlay { position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; transform: translate(-50%, -50%); border: 2px solid #f59e0b; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5); }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .stat-box { background-color: rgba(51, 65, 85, 0.5); border: 1px solid #475569; padding: 10px; border-radius: 12px; text-align: center; }
+    .stat-label { font-size: 0.75rem; color: #94a3b8; display: block; }
+    .stat-val { font-size: 1.1rem; font-weight: bold; color: #fbbf24; margin-top: 4px; display: block; }
+
+    input, select { width: 100%; padding: 12px; background-color: #334155; border: 1px solid #475569; color: white; border-radius: 12px; font-size: 1rem; margin-top: 6px; margin-bottom: 12px; }
+    label { font-size: 0.85rem; color: #cbd5e1; }
+    .hidden { display: none !important; }
+    .code-tag { font-family: monospace; font-size: 0.8rem; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 6px; }
+    .loading-text { color: #f59e0b; text-align: center; margin: 20px 0; font-weight: 500; }
+
+    .bean-item { background: #334155; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .bean-info h3 { font-size: 1rem; color: #fff; }
+    .bean-info p { font-size: 0.75rem; color: #94a3b8; }
+    .bean-actions { display: flex; gap: 6px; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; border: none; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>☕ Kaffee QR Manager</h1>
+  </header>
+
+  <!-- MANUELLE SYNC LEISTE -->
+  <div class="sync-bar">
+    <span id="sync-status">Lokale Daten</span>
+    <button onclick="manualSync()" class="btn-sync">🔄 Sync Sheets</button>
+  </div>
+
+  <div class="card">
+    
+    <!-- MAIN START VIEW -->
+    <div id="start-view">
+      <p style="color: #94a3b8; font-size: 0.9rem; text-align: center; margin-bottom: 16px;">
+        Wähle eine Aktion aus:
+      </p>
+      <button onclick="startLiveScan('READ')" class="btn">🔍 Live-Scan / Anzeigen</button>
+      <button onclick="startLiveScan('RELINK')" class="btn btn-relink">🔄 QR-Code Neu Belegen</button>
+      <button onclick="openBeanManager()" class="btn btn-manage">⚙️ Bohnen Verwalten</button>
+    </div>
+
+    <!-- LIVE CAMERA SCANNER VIEW -->
+    <div id="scanner-view" class="hidden">
+      <div id="video-container">
+        <video id="video" playsinline></video>
+        <div class="scan-overlay"></div>
+      </div>
+      <p style="text-align: center; color: #94a3b8; font-size: 0.85rem;">QR-Code im Rahmen ausrichten...</p>
+      <button onclick="stopCamera(); resetApp();" class="btn btn-secondary">Abbrechen</button>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loading" class="hidden loading-text" id="loading-msg">
+      Verarbeite Daten...
+    </div>
+
+    <!-- ERGEBNIS: Normales Lesen -->
+    <div id="result-found" class="hidden">
+      <div style="text-align: center; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(245,158,11,0.2);">
+        <span class="code-tag" id="res-qr"></span>
+        <h2 style="font-size: 1.4rem; font-weight: bold; margin-top: 6px; color: white;" id="res-name"></h2>
+      </div>
+
+      <div class="grid">
+        <div class="stat-box">
+          <span class="stat-label">Temp</span>
+          <span class="stat-val" id="res-temp"></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Gewicht</span>
+          <span class="stat-val" id="res-gewicht"></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Mahlgrad</span>
+          <span class="stat-val" id="res-mahlgrad"></span>
+        </div>
+      </div>
+
+      <button onclick="resetApp()" class="btn btn-secondary">Hauptmenü</button>
+    </div>
+
+    <!-- NEU VERBINDEN FORMULAR -->
+    <div id="relink-form" class="hidden">
+      <div style="text-align: center; background: rgba(2, 132, 199, 0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.2); margin-bottom: 12px;">
+        <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">QR-Code verknüpfen:</p>
+        <p class="code-tag" style="color: #7dd3fc; margin-top: 4px;" id="target-qr"></p>
+      </div>
+
+      <label>Wähle die gewünschte Bohne aus:</label>
+      <select id="select-bohne"></select>
+
+      <button onclick="executeRelink()" class="btn btn-relink">Zuordnung Speichern</button>
+      <button onclick="resetApp()" class="btn btn-secondary">Abbrechen</button>
+    </div>
+
+    <!-- BOHNEN MANAGER: UeBERSICHT -->
+    <div id="bean-manager-view" class="hidden">
+      <h2 style="font-size: 1.2rem; color: #10b981; margin-bottom: 12px;">Bohnensorten Stammdaten</h2>
+      <button onclick="openBeanEditForm()" class="btn btn-manage" style="margin-bottom: 16px;">+ Neue Bohne anlegen</button>
+      
+      <div id="bean-list"></div>
+
+      <button onclick="resetApp()" class="btn btn-secondary">Hauptmenü</button>
+    </div>
+
+    <!-- BOHNEN MANAGER: FORMULAR -->
+    <div id="bean-edit-view" class="hidden">
+      <h2 style="font-size: 1.2rem; color: #10b981; margin-bottom: 12px;" id="edit-form-title">Bohne Bearbeiten</h2>
+      
+      <label>Bohnen ID (z.B. B001):</label>
+      <input type="text" id="edit-id" placeholder="B001">
+
+      <label>Bohnen Name:</label>
+      <input type="text" id="edit-name" placeholder="z. B. Ethiopia Yirgacheffe">
+
+      <label>Temperatur:</label>
+      <input type="text" id="edit-temp" placeholder="z. B. 93°C">
+
+      <label>Gewicht:</label>
+      <input type="text" id="edit-gewicht" placeholder="z. B. 18.5g">
+
+      <label>Mahlgrad:</label>
+      <input type="text" id="edit-mahlgrad" placeholder="z. B. 14">
+
+      <button onclick="saveBeanData()" class="btn btn-manage">Speichern</button>
+      <button onclick="openBeanManager()" class="btn btn-secondary">Abbrechen</button>
+    </div>
+
+  </div>
+
+  <canvas id="hidden-canvas" class="hidden"></canvas>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbz847hIZo1s-NcPHEn4TceW2UuABSz69bILVIp7OvyN9__bBg4ewZOnpAspQLEvTts/exec";
+
+    let currentScannedQR = "";
+    let currentMode = "READ";
+    let videoStream = null;
+    let animationFrameId = null;
+
+    // Service Worker registrieren für Offline-Fähigkeit
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Fail:', err));
+    }
+
+    // Lokaler Speicher-Manager (LocalStorage)
+    function getDb() {
+      const db = localStorage.getItem('kaffee_db');
+      if (!db) {
+        return { masterBeans: [], packungen: [], pendingChanges: [] };
+      }
+      return JSON.parse(db);
+    }
+
+    function saveDb(db) {
+      localStorage.setItem('kaffee_db', JSON.stringify(db));
+      updateSyncStatusText();
+    }
+
+    function updateSyncStatusText() {
+      const db = getDb();
+      const pendingCount = db.pendingChanges ? db.pendingChanges.length : 0;
+      const statusEl = document.getElementById('sync-status');
+      
+      if (pendingCount > 0) {
+        statusEl.innerText = `${pendingCount} Änderung(en) ungespeichert`;
+        statusEl.style.color = '#f59e0b';
+      } else {
+        const lastSync = localStorage.getItem('last_sync_time');
+        statusEl.innerText = lastSync ? `Sync: ${lastSync}` : 'Lokal bereit';
+        statusEl.style.color = '#94a3b8';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateSyncStatusText();
+
+      // URL-Scan Support
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeFromUrl = urlParams.get('code');
+      if (codeFromUrl) {
+        processQrScan(codeFromUrl);
+      }
+    });
+
+    /* --- LOKALE SCAN LOGIK --- */
+    function processQrScan(qrText) {
+      let cleanQR = qrText;
+      if (qrText.includes('?code=')) {
+        cleanQR = qrText.split('?code=')[1].split('&')[0];
+      }
+
+      const db = getDb();
+      const packung = db.packungen.find(p => String(p.qr).trim() === String(cleanQR).trim());
+
+      if (packung) {
+        const bean = db.masterBeans.find(b => String(b.id).trim() === String(packung.bohnenId).trim());
+        if (bean) {
+          document.getElementById('res-qr').innerText = "QR: " + cleanQR;
+          document.getElementById('res-name').innerText = bean.name;
+          document.getElementById('res-temp').innerText = bean.temp;
+          document.getElementById('res-gewicht').innerText = bean.gewicht;
+          document.getElementById('res-mahlgrad').innerText = bean.mahlgrad;
+          showView('result-found');
+          return;
+        }
+      }
+
+      // Nicht gefunden
+      currentScannedQR = cleanQR;
+      document.getElementById('form-title-text').innerText = "Unbekannter Code – Erstmalig zuordnen:";
+      populateDropdown(db.masterBeans);
+      showView('relink-form');
+    }
+
+    function startLiveScan(mode) {
+      currentMode = mode;
+      showView('scanner-view');
+
+      const video = document.getElementById('video');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(function(stream) {
+          videoStream = stream;
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
+          animationFrameId = requestAnimationFrame(tick);
+        })
+        .catch(function(err) {
+          alert("Kamerazugriff fehlgeschlagen.");
+          resetApp();
+        });
+    }
+
+    function tick() {
+      const video = document.getElementById('video');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+          currentScannedQR = code.data;
+          stopCamera();
+
+          if (currentMode === 'RELINK') {
+            const db = getDb();
+            prepareRelinkForm(db.masterBeans);
+          } else {
+            processQrScan(currentScannedQR);
+          }
+          return;
+        }
+      }
+      animationFrameId = requestAnimationFrame(tick);
+    }
+
+    function stopCamera() {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+    }
+
+    function prepareRelinkForm(masterList) {
+      document.getElementById('form-title-text').innerText = "Verknüpfung ändern für:";
+      populateDropdown(masterList);
+      showView('relink-form');
+    }
+
+    function populateDropdown(list) {
+      const select = document.getElementById('select-bohne');
+      select.innerHTML = '';
+      list.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.innerText = `${item.name} (${item.id})`;
+        select.appendChild(opt);
+      });
+      document.getElementById('target-qr').innerText = currentScannedQR;
+    }
+
+    function executeRelink() {
+      const selectedBohnenId = document.getElementById('select-bohne').value;
+      if (!selectedBohnenId) return;
+
+      const db = getDb();
+      // Lokal aktualisieren
+      const packIdx = db.packungen.findIndex(p => String(p.qr).trim() === String(currentScannedQR).trim());
+      if (packIdx > -1) {
+        db.packungen[packIdx].bohnenId = selectedBohnenId;
+      } else {
+        db.packungen.push({ qr: currentScannedQR, bohnenId: selectedBohnenId });
+      }
+
+      // Für Sync vormerken
+      db.pendingChanges.push({
+        action: 'relink',
+        qr: currentScannedQR,
+        bohnenId: selectedBohnenId
+      });
+
+      saveDb(db);
+      processQrScan(currentScannedQR);
+    }
+
+    /* --- BOHNEN MANAGER LOGIK --- */
+    function openBeanManager() {
+      const db = getDb();
+      renderBeanList(db.masterBeans);
+      showView('bean-manager-view');
+    }
+
+    function renderBeanList(list) {
+      const container = document.getElementById('bean-list');
+      container.innerHTML = '';
+
+      if (list.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">Keine Bohnen vorhanden. Erstelle eine oder tippe auf "Sync Sheets".</p>';
+        return;
+      }
+
+      list.forEach(bean => {
+        const item = document.createElement('div');
+        item.className = 'bean-item';
+        item.innerHTML = `
+          <div class="bean-info">
+            <h3>${bean.name} <span style="font-size: 0.75rem; color: #fbbf24;">(${bean.id})</span></h3>
+            <p>Temp: ${bean.temp} | Gew: ${bean.gewicht} | Mahl: ${bean.mahlgrad}</p>
+          </div>
+          <div class="bean-actions">
+            <button onclick="openBeanEditForm('${bean.id}')" class="btn-sm btn-relink">✏️</button>
+            <button onclick="deleteBeanData('${bean.id}')" class="btn-sm btn-danger">🗑️</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function openBeanEditForm(beanId = null) {
+      const db = getDb();
+      if (beanId) {
+        const bean = db.masterBeans.find(b => b.id === beanId);
+        if (bean) {
+          document.getElementById('edit-form-title').innerText = "Bohne bearbeiten";
+          document.getElementById('edit-id').value = bean.id;
+          document.getElementById('edit-id').disabled = true;
+          document.getElementById('edit-name').value = bean.name;
+          document.getElementById('edit-temp').value = bean.temp;
+          document.getElementById('edit-gewicht').value = bean.gewicht;
+          document.getElementById('edit-mahlgrad').value = bean.mahlgrad;
+        }
+      } else {
+        document.getElementById('edit-form-title').innerText = "Neue Bohne anlegen";
+        document.getElementById('edit-id').value = "B" + String(Math.floor(100 + Math.random() * 900));
+        document.getElementById('edit-id').disabled = false;
+        document.getElementById('edit-name').value = "";
+        document.getElementById('edit-temp').value = "93°C";
+        document.getElementById('edit-gewicht').value = "18g";
+        document.getElementById('edit-mahlgrad').value = "14";
+      }
+      showView('bean-edit-view');
+    }
+
+    function saveBeanData() {
+      const id = document.getElementById('edit-id').value.trim();
+      const name = document.getElementById('edit-name').value.trim();
+      const temp = document.getElementById('edit-temp').value.trim();
+      const gewicht = document.getElementById('edit-gewicht').value.trim();
+      const mahlgrad = document.getElementById('edit-mahlgrad').value.trim();
+
+      if (!id || !name) {
+        alert("Bitte mindestens ID und Name ausfüllen.");
+        return;
+      }
+
+      const db = getDb();
+      const bIdx = db.masterBeans.findIndex(b => b.id === id);
+      const newBean = { id, name, temp, gewicht, mahlgrad };
+
+      if (bIdx > -1) {
+        db.masterBeans[bIdx] = newBean;
+      } else {
+        db.masterBeans.push(newBean);
+      }
+
+      db.pendingChanges.push({
+        action: 'saveBean',
+        id, name, temp, gewicht, mahlgrad
+      });
+
+      saveDb(db);
+      renderBeanList(db.masterBeans);
+      showView('bean-manager-view');
+    }
+
+    function deleteBeanData(id) {
+      if (!confirm(`Soll die Bohne ${id} gelöscht werden?`)) return;
+
+      const db = getDb();
+      db.masterBeans = db.masterBeans.filter(b => b.id !== id);
+
+      db.pendingChanges.push({ action: 'deleteBean', id });
+
+      saveDb(db);
+      renderBeanList(db.masterBeans);
+    }
+
+    /* --- MANUELLE SYNCHRONISATION MIT GOOGLE SHEETS --- */
+    function manualSync() {
+      if (!navigator.onLine) {
+        alert("Keine Internetverbindung vorhanden.");
+        return;
+      }
+
+      showView('loading');
+      const db = getDb();
+
+      // 1. Zuerst alle ausstehenden lokalen Änderungen hochladen
+      const uploadPromises = db.pendingChanges.map(change => {
+        let url = `${API_URL}?action=${change.action}`;
+        for (let key in change) {
+          if (key !== 'action') {
+            url += `&${key}=${encodeURIComponent(change[key])}`;
+          }
+        }
+        return fetch(url).then(res => res.json());
+      });
+
+      Promise.all(uploadPromises)
+        .then(() => {
+          // 2. Nach erfolgreichem Upload die frischen Daten aus Google Sheets runterladen
+          return fetch(`${API_URL}?action=getAllData`).then(res => res.json());
+        })
+        .then(freshData => {
+          // 3. Lokalen Speicher komplett mit Google Sheets abgleichen
+          const now = new Date();
+          const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          const newDb = {
+            masterBeans: freshData.masterBeans || [],
+            packungen: freshData.packungen || [],
+            pendingChanges: [] // Puffer zurücksetzen
+          };
+
+          localStorage.setItem('last_sync_time', timeString);
+          saveDb(newDb);
+
+          alert("Synchronisation erfolgreich abgeschlossen!");
+          resetApp();
+        })
+        .catch(err => {
+          alert("Fehler bei der Synchronisation: " + err.message);
+          resetApp();
+        });
+    }
+
+    function resetApp() {
+      stopCamera();
+      updateSyncStatusText();
+      showView('start-view');
+    }
+
+    function showView(viewId) {
+      document.getElementById('start-view').classList.add('hidden');
+      document.getElementById('scanner-view').classList.add('hidden');
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('result-found').classList.add('hidden');
+      document.getElementById('relink-form').classList.add('hidden');
+      document.getElementById('bean-manager-view').classList.add('hidden');
+      document.getElementById('bean-edit-view').classList.add('hidden');
+
+      document.getElementById(viewId).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
