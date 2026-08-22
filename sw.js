@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaffee-qr-v10'; // Auf v10 geändert!
+const CACHE_NAME = 'kaffee-qr-v11'; // Auf v11 geändert!
 
 const ASSETS = [
   './',
