@@ -1,4 +1,4 @@
-const CACHE_NAME = 'beans-pwa-v11';
+const CACHE_NAME = 'beans-pwa-v12';
 
 const ASSETS = [
   './',
