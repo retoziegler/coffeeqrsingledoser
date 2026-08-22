@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaffee-qr-v5';
+const CACHE_NAME = 'kaffee-qr-v10'; // Auf v10 geändert!
 
 const ASSETS = [
   './',
@@ -7,7 +7,23 @@ const ASSETS = [
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
 ];
 
+// Altem Cache den Garaus machen
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
