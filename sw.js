@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaffee-qr-v11'; // Auf v11 geändert!
+const CACHE_NAME = 'beans-pwa-v11';
 
 const ASSETS = [
   './',
@@ -7,7 +7,6 @@ const ASSETS = [
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
 ];
 
-// Altem Cache den Garaus machen
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
