@@ -1,7 +1,9 @@
-const CACHE_NAME = 'kaffee-qr-v1';
+const CACHE_NAME = 'kaffee-qr-v3';
+
 const ASSETS = [
   './',
   './index.html',
+  './config.js',
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
 ];
 
