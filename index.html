@@ -51,6 +51,7 @@
     .bean-actions { display: flex; gap: 6px; }
     .btn-sm { padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; border: none; color: white; cursor: pointer; }
 
+    /* UNTERE TAB BAR NAVIGATION (iOS Style) */
     .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background-color: #1e293b; border-top: 1px solid #334155; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; max-width: 500px; margin: 0 auto; }
     .tab-item { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; cursor: pointer; flex: 1; }
     .tab-item .icon { font-size: 1.3rem; margin-bottom: 2px; }
@@ -63,6 +64,7 @@
     <h1>☕ Kaffee QR Manager</h1>
   </header>
 
+  <!-- SYNC STATUS LEISTE -->
   <div class="sync-bar">
     <span id="sync-status">Lokale Daten bereit</span>
     <button onclick="manualSync()" class="btn-sync">🔄 Sync Sheets</button>
@@ -70,6 +72,7 @@
 
   <div class="card">
 
+    <!-- TAB 1 & 3: SCANNER VIEW -->
     <div id="scanner-view">
       <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px;" id="scan-hint-text">
         QR-Code im Rahmen ausrichten...
@@ -80,10 +83,12 @@
       </div>
     </div>
 
+    <!-- LOADING -->
     <div id="loading" class="hidden loading-text">
       Verarbeite Daten...
     </div>
 
+    <!-- ERGEBNIS: Code gefunden -->
     <div id="result-found" class="hidden">
       <div style="text-align: center; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(245,158,11,0.2);">
         <span class="code-tag" id="res-qr"></span>
@@ -108,6 +113,7 @@
       <button onclick="resumeScanFromResults()" class="btn btn-secondary">Nächsten Code Scannen</button>
     </div>
 
+    <!-- NEU VERBINDEN FORMULAR -->
     <div id="relink-form" class="hidden">
       <div style="text-align: center; background: rgba(2, 132, 199, 0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.2); margin-bottom: 12px;">
         <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">QR-Code verknüpfen:</p>
@@ -121,6 +127,7 @@
       <button onclick="resumeScanFromResults()" class="btn btn-secondary">Abbrechen</button>
     </div>
 
+    <!-- BOHNEN MANAGER: ÜBERSICHT -->
     <div id="bean-manager-view" class="hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h2 style="font-size: 1.1rem; color: #10b981;">Bohnensorten</h2>
@@ -130,6 +137,7 @@
       <div id="bean-list"></div>
     </div>
 
+    <!-- BOHNEN MANAGER: FORMULAR -->
     <div id="bean-edit-view" class="hidden">
       <h2 style="font-size: 1.1rem; color: #10b981; margin-bottom: 12px;" id="edit-form-title">Bohne Bearbeiten</h2>
       
@@ -156,6 +164,7 @@
 
   <canvas id="hidden-canvas" class="hidden"></canvas>
 
+  <!-- UNTERE TAB-BAR NAVIGATION -->
   <nav class="tab-bar">
     <button class="tab-item" id="tab-beans" onclick="switchTab('beans')">
       <span class="icon">☕</span>
