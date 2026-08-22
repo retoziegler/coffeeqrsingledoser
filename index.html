@@ -9,45 +9,52 @@
   <meta name="apple-mobile-web-app-title" content="Kaffee QR">
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="./config.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 16px; display: flex; flex-direction: column; align-items: center; }
-    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 12px; }
-    h1 { color: #f59e0b; font-size: 1.5rem; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 12px 12px 80px 12px; display: flex; flex-direction: column; align-items: center; }
     
-    .sync-bar { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 0.8rem; color: #94a3b8; }
-    .btn-sync { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 8px; }
+    h1 { color: #f59e0b; font-size: 1.3rem; }
     
-    .card { background-color: #1e293b; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+    .sync-bar { width: 100%; max-width: 400px; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.75rem; color: #94a3b8; }
+    .btn-sync { background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
     
-    .btn { display: block; width: 100%; padding: 14px; background-color: #d97706; color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; text-align: center; cursor: pointer; margin-top: 10px; }
+    .card { background-color: #1e293b; border-radius: 16px; padding: 16px; width: 100%; max-width: 400px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
+    
+    .btn { display: block; width: 100%; padding: 12px; background-color: #d97706; color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 0.95rem; text-align: center; cursor: pointer; margin-top: 10px; }
     .btn:active { background-color: #b45309; }
     .btn-secondary { background-color: #334155; }
     .btn-relink { background-color: #0284c7; }
     .btn-manage { background-color: #10b981; }
     .btn-danger { background-color: #ef4444; }
     
-    #video-container { position: relative; width: 100%; height: 260px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+    #video-container { position: relative; width: 100%; height: 280px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
     #video { width: 100%; height: 100%; object-fit: cover; }
-    .scan-overlay { position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; transform: translate(-50%, -50%); border: 2px solid #f59e0b; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5); }
+    .scan-overlay { position: absolute; top: 50%; left: 50%; width: 190px; height: 190px; transform: translate(-50%, -50%); border: 2px solid #f59e0b; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5); }
 
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
     .stat-box { background-color: rgba(51, 65, 85, 0.5); border: 1px solid #475569; padding: 10px; border-radius: 12px; text-align: center; }
     .stat-label { font-size: 0.75rem; color: #94a3b8; display: block; }
     .stat-val { font-size: 1.1rem; font-weight: bold; color: #fbbf24; margin-top: 4px; display: block; }
 
-    input, select { width: 100%; padding: 12px; background-color: #334155; border: 1px solid #475569; color: white; border-radius: 12px; font-size: 1rem; margin-top: 6px; margin-bottom: 12px; }
+    input, select { width: 100%; padding: 12px; background-color: #334155; border: 1px solid #475569; color: white; border-radius: 12px; font-size: 0.95rem; margin-top: 6px; margin-bottom: 12px; }
     label { font-size: 0.85rem; color: #cbd5e1; }
     .hidden { display: none !important; }
     .code-tag { font-family: monospace; font-size: 0.8rem; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 6px; }
     .loading-text { color: #f59e0b; text-align: center; margin: 20px 0; font-weight: 500; }
 
     .bean-item { background: #334155; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .bean-info h3 { font-size: 1rem; color: #fff; }
+    .bean-info h3 { font-size: 0.95rem; color: #fff; }
     .bean-info p { font-size: 0.75rem; color: #94a3b8; }
     .bean-actions { display: flex; gap: 6px; }
-    .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; border: none; color: white; cursor: pointer; }
+    .btn-sm { padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; border: none; color: white; cursor: pointer; }
+
+    .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background-color: #1e293b; border-top: 1px solid #334155; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; max-width: 500px; margin: 0 auto; }
+    .tab-item { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; cursor: pointer; flex: 1; }
+    .tab-item .icon { font-size: 1.3rem; margin-bottom: 2px; }
+    .tab-item.active { color: #f59e0b; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -56,44 +63,31 @@
     <h1>☕ Kaffee QR Manager</h1>
   </header>
 
-  <!-- MANUELLE SYNC LEISTE -->
   <div class="sync-bar">
-    <span id="sync-status">Lokale Daten</span>
+    <span id="sync-status">Lokale Daten bereit</span>
     <button onclick="manualSync()" class="btn-sync">🔄 Sync Sheets</button>
   </div>
 
   <div class="card">
-    
-    <!-- MAIN START VIEW -->
-    <div id="start-view">
-      <p style="color: #94a3b8; font-size: 0.9rem; text-align: center; margin-bottom: 16px;">
-        Wähle eine Aktion aus:
-      </p>
-      <button onclick="startLiveScan('READ')" class="btn">🔍 Live-Scan / Anzeigen</button>
-      <button onclick="startLiveScan('RELINK')" class="btn btn-relink">🔄 QR-Code Neu Belegen</button>
-      <button onclick="openBeanManager()" class="btn btn-manage">⚙️ Bohnen Verwalten</button>
-    </div>
 
-    <!-- LIVE CAMERA SCANNER VIEW -->
-    <div id="scanner-view" class="hidden">
+    <div id="scanner-view">
+      <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px;" id="scan-hint-text">
+        QR-Code im Rahmen ausrichten...
+      </p>
       <div id="video-container">
         <video id="video" playsinline></video>
-        <div class="scan-overlay"></div>
+        <div class="scan-overlay" id="scan-frame"></div>
       </div>
-      <p style="text-align: center; color: #94a3b8; font-size: 0.85rem;">QR-Code im Rahmen ausrichten...</p>
-      <button onclick="stopCamera(); resetApp();" class="btn btn-secondary">Abbrechen</button>
     </div>
 
-    <!-- LOADING -->
-    <div id="loading" class="hidden loading-text" id="loading-msg">
+    <div id="loading" class="hidden loading-text">
       Verarbeite Daten...
     </div>
 
-    <!-- ERGEBNIS: Normales Lesen -->
     <div id="result-found" class="hidden">
       <div style="text-align: center; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(245,158,11,0.2);">
         <span class="code-tag" id="res-qr"></span>
-        <h2 style="font-size: 1.4rem; font-weight: bold; margin-top: 6px; color: white;" id="res-name"></h2>
+        <h2 style="font-size: 1.3rem; font-weight: bold; margin-top: 6px; color: white;" id="res-name"></h2>
       </div>
 
       <div class="grid">
@@ -111,10 +105,9 @@
         </div>
       </div>
 
-      <button onclick="resetApp()" class="btn btn-secondary">Hauptmenü</button>
+      <button onclick="resumeScanFromResults()" class="btn btn-secondary">Nächsten Code Scannen</button>
     </div>
 
-    <!-- NEU VERBINDEN FORMULAR -->
     <div id="relink-form" class="hidden">
       <div style="text-align: center; background: rgba(2, 132, 199, 0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.2); margin-bottom: 12px;">
         <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">QR-Code verknüpfen:</p>
@@ -125,22 +118,20 @@
       <select id="select-bohne"></select>
 
       <button onclick="executeRelink()" class="btn btn-relink">Zuordnung Speichern</button>
-      <button onclick="resetApp()" class="btn btn-secondary">Abbrechen</button>
+      <button onclick="resumeScanFromResults()" class="btn btn-secondary">Abbrechen</button>
     </div>
 
-    <!-- BOHNEN MANAGER: UeBERSICHT -->
     <div id="bean-manager-view" class="hidden">
-      <h2 style="font-size: 1.2rem; color: #10b981; margin-bottom: 12px;">Bohnensorten Stammdaten</h2>
-      <button onclick="openBeanEditForm()" class="btn btn-manage" style="margin-bottom: 16px;">+ Neue Bohne anlegen</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="font-size: 1.1rem; color: #10b981;">Bohnensorten</h2>
+        <button onclick="openBeanEditForm()" class="btn-sm btn-manage">+ Neue Bohne</button>
+      </div>
       
       <div id="bean-list"></div>
-
-      <button onclick="resetApp()" class="btn btn-secondary">Hauptmenü</button>
     </div>
 
-    <!-- BOHNEN MANAGER: FORMULAR -->
     <div id="bean-edit-view" class="hidden">
-      <h2 style="font-size: 1.2rem; color: #10b981; margin-bottom: 12px;" id="edit-form-title">Bohne Bearbeiten</h2>
+      <h2 style="font-size: 1.1rem; color: #10b981; margin-bottom: 12px;" id="edit-form-title">Bohne Bearbeiten</h2>
       
       <label>Bohnen ID (z.B. B001):</label>
       <input type="text" id="edit-id" placeholder="B001">
@@ -158,32 +149,41 @@
       <input type="text" id="edit-mahlgrad" placeholder="z. B. 14">
 
       <button onclick="saveBeanData()" class="btn btn-manage">Speichern</button>
-      <button onclick="openBeanManager()" class="btn btn-secondary">Abbrechen</button>
+      <button onclick="switchTab('beans')" class="btn btn-secondary">Abbrechen</button>
     </div>
 
   </div>
 
   <canvas id="hidden-canvas" class="hidden"></canvas>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz847hIZo1s-NcPHEn4TceW2UuABSz69bILVIp7OvyN9__bBg4ewZOnpAspQLEvTts/exec";
+  <nav class="tab-bar">
+    <button class="tab-item" id="tab-beans" onclick="switchTab('beans')">
+      <span class="icon">☕</span>
+      <span>Bohnen</span>
+    </button>
+    <button class="tab-item active" id="tab-scan" onclick="switchTab('scan')">
+      <span class="icon">🔍</span>
+      <span>Scan</span>
+    </button>
+    <button class="tab-item" id="tab-assign" onclick="switchTab('assign')">
+      <span class="icon">🔗</span>
+      <span>Zuweisen</span>
+    </button>
+  </nav>
 
+  <script>
     let currentScannedQR = "";
     let currentMode = "READ";
     let videoStream = null;
     let animationFrameId = null;
 
-    // Service Worker registrieren für Offline-Fähigkeit
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Fail:', err));
     }
 
-    // Lokaler Speicher-Manager (LocalStorage)
     function getDb() {
       const db = localStorage.getItem('kaffee_db');
-      if (!db) {
-        return { masterBeans: [], packungen: [], pendingChanges: [] };
-      }
+      if (!db) return { masterBeans: [], packungen: [], pendingChanges: [] };
       return JSON.parse(db);
     }
 
@@ -210,48 +210,41 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateSyncStatusText();
 
-      // URL-Scan Support
       const urlParams = new URLSearchParams(window.location.search);
       const codeFromUrl = urlParams.get('code');
       if (codeFromUrl) {
         processQrScan(codeFromUrl);
+      } else {
+        switchTab('scan');
       }
     });
 
-    /* --- LOKALE SCAN LOGIK --- */
-    function processQrScan(qrText) {
-      let cleanQR = qrText;
-      if (qrText.includes('?code=')) {
-        cleanQR = qrText.split('?code=')[1].split('&')[0];
+    function switchTab(tabName) {
+      stopCamera();
+
+      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      hideAllViews();
+
+      if (tabName === 'beans') {
+        openBeanManager();
+      } else if (tabName === 'scan') {
+        currentMode = 'READ';
+        document.getElementById('scan-hint-text').innerText = "QR-Code scannen zum Anzeigen:";
+        document.getElementById('scan-frame').style.borderColor = "#f59e0b";
+        document.getElementById('scanner-view').classList.remove('hidden');
+        startCamera();
+      } else if (tabName === 'assign') {
+        currentMode = 'RELINK';
+        document.getElementById('scan-hint-text').innerText = "QR-Code scannen zum NEU ZUWEISEN:";
+        document.getElementById('scan-frame').style.borderColor = "#0284c7";
+        document.getElementById('scanner-view').classList.remove('hidden');
+        startCamera();
       }
-
-      const db = getDb();
-      const packung = db.packungen.find(p => String(p.qr).trim() === String(cleanQR).trim());
-
-      if (packung) {
-        const bean = db.masterBeans.find(b => String(b.id).trim() === String(packung.bohnenId).trim());
-        if (bean) {
-          document.getElementById('res-qr').innerText = "QR: " + cleanQR;
-          document.getElementById('res-name').innerText = bean.name;
-          document.getElementById('res-temp').innerText = bean.temp;
-          document.getElementById('res-gewicht').innerText = bean.gewicht;
-          document.getElementById('res-mahlgrad').innerText = bean.mahlgrad;
-          showView('result-found');
-          return;
-        }
-      }
-
-      // Nicht gefunden
-      currentScannedQR = cleanQR;
-      document.getElementById('form-title-text').innerText = "Unbekannter Code – Erstmalig zuordnen:";
-      populateDropdown(db.masterBeans);
-      showView('relink-form');
     }
 
-    function startLiveScan(mode) {
-      currentMode = mode;
-      showView('scanner-view');
-
+    function startCamera() {
       const video = document.getElementById('video');
 
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -264,7 +257,6 @@
         })
         .catch(function(err) {
           alert("Kamerazugriff fehlgeschlagen.");
-          resetApp();
         });
     }
 
@@ -308,10 +300,47 @@
       }
     }
 
+    function resumeScanFromResults() {
+      hideAllViews();
+      const currentTab = document.querySelector('.tab-item.active').id.replace('tab-', '');
+      switchTab(currentTab);
+    }
+
+    function processQrScan(qrText) {
+      let cleanQR = qrText;
+      if (qrText.includes('?code=')) {
+        cleanQR = qrText.split('?code=')[1].split('&')[0];
+      }
+
+      const db = getDb();
+      const packung = db.packungen.find(p => String(p.qr).trim() === String(cleanQR).trim());
+
+      hideAllViews();
+
+      if (packung) {
+        const bean = db.masterBeans.find(b => String(b.id).trim() === String(packung.bohnenId).trim());
+        if (bean) {
+          document.getElementById('res-qr').innerText = "QR: " + cleanQR;
+          document.getElementById('res-name').innerText = bean.name;
+          document.getElementById('res-temp').innerText = bean.temp;
+          document.getElementById('res-gewicht').innerText = bean.gewicht;
+          document.getElementById('res-mahlgrad').innerText = bean.mahlgrad;
+          document.getElementById('result-found').classList.remove('hidden');
+          return;
+        }
+      }
+
+      currentScannedQR = cleanQR;
+      document.getElementById('form-title-text').innerText = "Unbekannter Code – Erstmalig zuordnen:";
+      populateDropdown(db.masterBeans);
+      document.getElementById('relink-form').classList.remove('hidden');
+    }
+
     function prepareRelinkForm(masterList) {
+      hideAllViews();
       document.getElementById('form-title-text').innerText = "Verknüpfung ändern für:";
       populateDropdown(masterList);
-      showView('relink-form');
+      document.getElementById('relink-form').classList.remove('hidden');
     }
 
     function populateDropdown(list) {
@@ -331,7 +360,6 @@
       if (!selectedBohnenId) return;
 
       const db = getDb();
-      // Lokal aktualisieren
       const packIdx = db.packungen.findIndex(p => String(p.qr).trim() === String(currentScannedQR).trim());
       if (packIdx > -1) {
         db.packungen[packIdx].bohnenId = selectedBohnenId;
@@ -339,7 +367,6 @@
         db.packungen.push({ qr: currentScannedQR, bohnenId: selectedBohnenId });
       }
 
-      // Für Sync vormerken
       db.pendingChanges.push({
         action: 'relink',
         qr: currentScannedQR,
@@ -350,11 +377,11 @@
       processQrScan(currentScannedQR);
     }
 
-    /* --- BOHNEN MANAGER LOGIK --- */
     function openBeanManager() {
       const db = getDb();
       renderBeanList(db.masterBeans);
-      showView('bean-manager-view');
+      hideAllViews();
+      document.getElementById('bean-manager-view').classList.remove('hidden');
     }
 
     function renderBeanList(list) {
@@ -362,7 +389,7 @@
       container.innerHTML = '';
 
       if (list.length === 0) {
-        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">Keine Bohnen vorhanden. Erstelle eine oder tippe auf "Sync Sheets".</p>';
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center; margin-top: 20px;">Keine Bohnen geladen. Tippe oben auf "Sync Sheets".</p>';
         return;
       }
 
@@ -385,6 +412,7 @@
 
     function openBeanEditForm(beanId = null) {
       const db = getDb();
+      hideAllViews();
       if (beanId) {
         const bean = db.masterBeans.find(b => b.id === beanId);
         if (bean) {
@@ -405,7 +433,7 @@
         document.getElementById('edit-gewicht').value = "18g";
         document.getElementById('edit-mahlgrad').value = "14";
       }
-      showView('bean-edit-view');
+      document.getElementById('bean-edit-view').classList.remove('hidden');
     }
 
     function saveBeanData() {
@@ -436,8 +464,7 @@
       });
 
       saveDb(db);
-      renderBeanList(db.masterBeans);
-      showView('bean-manager-view');
+      switchTab('beans');
     }
 
     function deleteBeanData(id) {
@@ -445,24 +472,29 @@
 
       const db = getDb();
       db.masterBeans = db.masterBeans.filter(b => b.id !== id);
-
       db.pendingChanges.push({ action: 'deleteBean', id });
 
       saveDb(db);
       renderBeanList(db.masterBeans);
     }
 
-    /* --- MANUELLE SYNCHRONISATION MIT GOOGLE SHEETS --- */
     function manualSync() {
+      if (typeof API_URL === 'undefined' || API_URL.includes('DEINE_AKTUELLE_APPS_SCRIPT_ID')) {
+        alert("Bitte zuerst deine Google Apps Script URL in der Datei config.js eintragen!");
+        return;
+      }
+
       if (!navigator.onLine) {
         alert("Keine Internetverbindung vorhanden.");
         return;
       }
 
-      showView('loading');
+      stopCamera();
+      hideAllViews();
+      document.getElementById('loading').classList.remove('hidden');
+
       const db = getDb();
 
-      // 1. Zuerst alle ausstehenden lokalen Änderungen hochladen
       const uploadPromises = db.pendingChanges.map(change => {
         let url = `${API_URL}?action=${change.action}`;
         for (let key in change) {
@@ -474,49 +506,36 @@
       });
 
       Promise.all(uploadPromises)
-        .then(() => {
-          // 2. Nach erfolgreichem Upload die frischen Daten aus Google Sheets runterladen
-          return fetch(`${API_URL}?action=getAllData`).then(res => res.json());
-        })
+        .then(() => fetch(`${API_URL}?action=getAllData`).then(res => res.json()))
         .then(freshData => {
-          // 3. Lokalen Speicher komplett mit Google Sheets abgleichen
           const now = new Date();
           const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           const newDb = {
             masterBeans: freshData.masterBeans || [],
             packungen: freshData.packungen || [],
-            pendingChanges: [] // Puffer zurücksetzen
+            pendingChanges: []
           };
 
           localStorage.setItem('last_sync_time', timeString);
           saveDb(newDb);
 
-          alert("Synchronisation erfolgreich abgeschlossen!");
-          resetApp();
+          alert("Synchronisation erfolgreich!");
+          switchTab('scan');
         })
         .catch(err => {
           alert("Fehler bei der Synchronisation: " + err.message);
-          resetApp();
+          switchTab('scan');
         });
     }
 
-    function resetApp() {
-      stopCamera();
-      updateSyncStatusText();
-      showView('start-view');
-    }
-
-    function showView(viewId) {
-      document.getElementById('start-view').classList.add('hidden');
+    function hideAllViews() {
       document.getElementById('scanner-view').classList.add('hidden');
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('result-found').classList.add('hidden');
       document.getElementById('relink-form').classList.add('hidden');
       document.getElementById('bean-manager-view').classList.add('hidden');
       document.getElementById('bean-edit-view').classList.add('hidden');
-
-      document.getElementById(viewId).classList.remove('hidden');
     }
   </script>
 </body>
