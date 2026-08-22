@@ -13,7 +13,8 @@
   <!-- Apple Homescreen Icon -->
   <link rel="apple-touch-icon" href="https://fav.farm/☕">
 
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <!-- Html5Qrcode Library for Fast Barcode (Code 128) & QR Scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="./config.js"></script>
 
   <style>
@@ -36,9 +37,8 @@
     .btn-manage { background-color: #10b981; }
     .btn-danger { background-color: #ef4444; }
     
-    #video-container { position: relative; width: 100%; height: 240px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
-    #video { width: 100%; height: 100%; object-fit: cover; }
-    .scan-overlay { position: absolute; top: 50%; left: 50%; width: 170px; height: 170px; transform: translate(-50%, -50%); border: 2px solid #f59e0b; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5); }
+    #video-container { position: relative; width: 100%; height: 250px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+    #interactive video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
     .stat-box { background-color: rgba(51, 65, 85, 0.5); border: 1px solid #475569; padding: 10px; border-radius: 12px; text-align: center; }
@@ -80,11 +80,10 @@
 
     <div id="scanner-view">
       <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 8px;" id="scan-hint-text">
-        QR-Code im Rahmen ausrichten...
+        Code im Rahmen ausrichten...
       </p>
       <div id="video-container">
-        <video id="video" playsinline></video>
-        <div class="scan-overlay" id="scan-frame"></div>
+        <div id="interactive" style="width: 100%; height: 100%;"></div>
       </div>
 
       <div id="assign-history-section" class="hidden" style="margin-top: 16px; border-top: 1px solid #334155; padding-top: 12px;">
@@ -123,7 +122,7 @@
 
     <div id="relink-form" class="hidden">
       <div style="text-align: center; background: rgba(2, 132, 199, 0.1); padding: 12px; border-radius: 12px; border: 1px solid rgba(2, 132, 199, 0.2); margin-bottom: 12px;">
-        <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">QR-Code verknüpfen:</p>
+        <p style="color: #38bdf8; font-size: 0.85rem;" id="form-title-text">Code verknüpfen:</p>
         <p class="code-tag" style="color: #7dd3fc; margin-top: 4px;" id="target-qr"></p>
       </div>
 
@@ -167,8 +166,6 @@
 
   </div>
 
-  <canvas id="hidden-canvas" class="hidden"></canvas>
-
   <nav class="tab-bar">
     <button class="tab-item" id="tab-beans" onclick="switchTab('beans')">
       <span class="icon">☕</span>
@@ -187,8 +184,7 @@
   <script>
     let currentScannedQR = "";
     let currentMode = "READ";
-    let videoStream = null;
-    let animationFrameId = null;
+    let html5QrCode = null;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Fail:', err));
@@ -244,15 +240,13 @@
         openBeanManager();
       } else if (tabName === 'scan') {
         currentMode = 'READ';
-        document.getElementById('scan-hint-text').innerText = "QR-Code scannen zum Anzeigen:";
-        document.getElementById('scan-frame').style.borderColor = "#f59e0b";
+        document.getElementById('scan-hint-text').innerText = "Strichcode / QR scannen zum Anzeigen:";
         document.getElementById('assign-history-section').classList.add('hidden');
         document.getElementById('scanner-view').classList.remove('hidden');
         startCamera();
       } else if (tabName === 'assign') {
         currentMode = 'RELINK';
-        document.getElementById('scan-hint-text').innerText = "QR-Code scannen zum ZUWEISEN:";
-        document.getElementById('scan-frame').style.borderColor = "#0284c7";
+        document.getElementById('scan-hint-text').innerText = "Strichcode / QR scannen zum ZUWEISEN:";
         renderAssignList();
         document.getElementById('assign-history-section').classList.remove('hidden');
         document.getElementById('scanner-view').classList.remove('hidden');
@@ -261,39 +255,25 @@
     }
 
     function startCamera() {
-      const video = document.getElementById('video');
+      const container = document.getElementById('interactive');
+      container.innerHTML = '';
 
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(function(stream) {
-          videoStream = stream;
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-          animationFrameId = requestAnimationFrame(tick);
-        })
-        .catch(function(err) {
-          alert("Kamerazugriff fehlgeschlagen.");
-        });
-    }
+      html5QrCode = new Html5Qrcode("interactive");
 
-    function tick() {
-      const video = document.getElementById('video');
+      const config = {
+        fps: 15,
+        qrbox: { width: 240, height: 160 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      };
 
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        const canvas = document.getElementById('hidden-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
-        });
-
-        if (code) {
-          currentScannedQR = code.data;
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          currentScannedQR = decodedText;
           stopCamera();
 
           if (currentMode === 'RELINK') {
@@ -302,17 +282,20 @@
           } else {
             processQrScan(currentScannedQR);
           }
-          return;
+        },
+        (errorMessage) => {
+          // Frame-by-frame scanning
         }
-      }
-      animationFrameId = requestAnimationFrame(tick);
+      ).catch(err => {
+        console.log("Kamerazugriff:", err);
+      });
     }
 
     function stopCamera() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+        }).catch(err => console.log(err));
       }
     }
 
@@ -336,7 +319,7 @@
       if (packung) {
         const bean = db.masterBeans.find(b => String(b.id).trim() === String(packung.bohnenId).trim());
         if (bean) {
-          document.getElementById('res-qr').innerText = "QR: " + cleanQR;
+          document.getElementById('res-qr').innerText = "Code: " + cleanQR;
           document.getElementById('res-name').innerText = bean.name;
           document.getElementById('res-temp').innerText = bean.temp;
           document.getElementById('res-gewicht').innerText = bean.gewicht;
@@ -399,7 +382,7 @@
       container.innerHTML = '';
 
       if (db.packungen.length === 0) {
-        container.innerHTML = '<p style="color: #94a3b8; text-align: center; font-size: 0.8rem; padding: 12px;">Keine QR-Verknüpfungen vorhanden.</p>';
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center; font-size: 0.8rem; padding: 12px;">Keine Verknüpfungen vorhanden.</p>';
         return;
       }
 
@@ -411,7 +394,7 @@
         item.className = 'list-item';
         item.innerHTML = `
           <div class="list-info">
-            <h3>QR: ${p.qr}</h3>
+            <h3>Code: ${p.qr}</h3>
             <p>➔ ${beanName}</p>
           </div>
           <div class="list-actions">
